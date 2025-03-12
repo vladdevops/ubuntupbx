@@ -68,7 +68,7 @@
 Download the cloud-init file from this repository
 
 ```bash
-curl -L -o cloud-init-jinja.yaml https://raw.githubusercontent.com/rajannpatel/ubuntupbx/refs/heads/main/cloud-init.yaml
+curl -L -o cloud-init-jinja.yaml https://raw.githubusercontent.com/vladdevops/ubuntupbx/refs/heads/main/cloud-init.yaml
 nano cloud-init-jinja.yaml
 ```
 
@@ -115,7 +115,7 @@ nano cloud-init-jinja.yaml
 # OPTIONAL: PRECONFIGURE FREEPBX CORE MODULE (OUTBOUND ROUTES AND TRUNKS)
 # ubuntupbx.core.backup.tar.gz was generated with the Backup & Restore FreePBX Module
 # this can be replaced with the https:// or gs:// address of your backup file, if you're copying configurations from another FreePBX installation
-{% set RESTORE_BACKUP = 'https://github.com/rajannpatel/ubuntupbx/raw/refs/heads/main/ubuntupbx.core.backup.tar.gz' %}
+{% set RESTORE_BACKUP = 'https://github.com/vladdevops/ubuntupbx/raw/refs/heads/main/ubuntupbx.core.backup.tar.gz' %}
 # ubuntupbx.core.backup.tar.gz Outbound Routes include: N11, North America FoIP, North America VoIP, International VoIP
 # ubuntupbx.core.backup.tar.gz SIP Trunks include:
 {% set enable_T38Fax = true %}      # https://t38fax.com
@@ -492,7 +492,7 @@ These steps are performed in your cloud-deployment workspace.
 8. Download the cloud-init YAML.
 
     ```bash
-    curl -L -O https://raw.githubusercontent.com/rajannpatel/ubuntupbx/refs/heads/main/cloud-init.yaml
+    curl -L -O https://raw.githubusercontent.com/vladdevops/ubuntupbx/refs/heads/main/cloud-init.yaml
     nano cloud-init.yaml
     ```
 
@@ -541,13 +541,13 @@ These steps are performed in your cloud-deployment workspace.
     # OPTIONAL: PRECONFIGURE FREEPBX CORE MODULE (OUTBOUND ROUTES AND TRUNKS)
     # ubuntupbx.core.backup.tar.gz was generated with the Backup & Restore FreePBX Module
     # this can be replaced with the https:// or gs:// address of your backup file, if you're copying configurations from another FreePBX installation
-    {% set RESTORE_BACKUP = 'https://github.com/rajannpatel/ubuntupbx/raw/refs/heads/main/ubuntupbx.core.backup.tar.gz' %}
+    {% set RESTORE_BACKUP = 'https://github.com/vladdevops/ubuntupbx/raw/refs/heads/main/ubuntupbx.core.backup.tar.gz' %}
     # ubuntupbx.core.backup.tar.gz Outbound Routes include: N11, North America FoIP, North America VoIP, International VoIP
     # ubuntupbx.core.backup.tar.gz SIP Trunks include:
-    {% set enable_T38Fax = true %}      # https://t38fax.com
+    {% set enable_T38Fax = false %}      # https://t38fax.com
     {% set enable_Flowroute = false %}  # https://flowroute.com
     {% set enable_Telnyx = false %}     # https://telnyx.com
-    {% set enable_BulkVS = true %}      # https://bulkvs.com
+    {% set enable_BulkVS = false %}      # https://bulkvs.com
 
     # List of public IPv4 addresses that should never be blocked by fail2ban
     # - Use standard dotted decimal notation for each IP address or CIDR (slash) notation IP ranges
@@ -557,7 +557,7 @@ These steps are performed in your cloud-deployment workspace.
 
     # TIMEZONE: default value is fine
     # As represented in /usr/share/zoneinfo. An empty string ('') will result in UTC time being used.
-    {% set TIMEZONE = 'America/New_York' %}
+    {% set TIMEZONE = 'UTC' %}
 
     # TIME TO INSTALL AND REBOOT UBUNTU FOR SECURITY PATCHES FROM CANONICAL IN XX:XX FORMAT
     {% set SECURITY_INSTALL_TIME = "04:10" %}
@@ -570,7 +570,7 @@ These steps are performed in your cloud-deployment workspace.
     # PHP 8.2 IS OFFICIALLY TESTED WITH FREEPBX BY SANGOMA, PHP 8.2 IS SECURITY MAINTAINED UNTIL 31 Dec 2026 FROM THE PHP GROUP (UPSTREAM)
     # PHP 8.3 IS COMPATIBLE WITH FREEPBX AND ALL AVAILABLE MODULES, PHP 8.3 GETS SECURITY PATCHING UNTIL 2036 THROUGH CANONICAL, THE PUBLISHERS OF UBUNTU
     # PHP_VERSION = 8.2|8.3
-    {% set PHP_VERSION = "8.2" %}
+    {% set PHP_VERSION = "8.3" %}
 
     # =========================
     # END OF SETTING VARIABLES

@@ -7,6 +7,8 @@
 # Ubuntu Pro token from: https://ubuntu.com/pro/dashboard (not needed for Ubuntu Pro instances on Azure, AWS, or Google Cloud)
 {% set TOKEN = '' %}
 
+{% set NEED_SWAPFILE = false %}
+
 # SMTP credentials (sendgrid and gmail example configurations)
 # sendgrid: https://console.cloud.google.com/marketplace/product/sendgrid-app/sendgrid-email
 # {% set SMTP_HOST = 'smtp.sendgrid.net' %}
@@ -39,13 +41,14 @@
 # OPTIONAL: PRECONFIGURE FREEPBX CORE MODULE (OUTBOUND ROUTES AND TRUNKS)
 # ubuntupbx.core.backup.tar.gz was generated with the Backup & Restore FreePBX Module
 # this can be replaced with the address of your backup file, if you're copying configurations from another FreePBX installation
-{% set RESTORE_BACKUP = 'https://github.com/rajannpatel/ubuntupbx/raw/refs/heads/main/ubuntupbx.core.backup.tar.gz' %}
+{% set RESTORE_BACKUP = false %}
+{% set RESTORE_BACKUP_ASTERISK = false %}
 # ubuntupbx.core.backup.tar.gz Outbound Routes include: N11, North America FoIP, North America VoIP, International VoIP
 # ubuntupbx.core.backup.tar.gz SIP Trunks include:
-{% set enable_T38Fax = true %}      # https://t38fax.com
+{% set enable_T38Fax = false %}      # https://t38fax.com
 {% set enable_Flowroute = false %}  # https://flowroute.com
 {% set enable_Telnyx = false %}     # https://telnyx.com
-{% set enable_BulkVS = true %}      # https://bulkvs.com
+{% set enable_BulkVS = false %}      # https://bulkvs.com
 
 # List of public IPv4 addresses that should never be blocked by fail2ban
 # - Use standard dotted decimal notation for each IP address or CIDR (slash) notation IP ranges
@@ -55,7 +58,7 @@
 
 # TIMEZONE: default value is fine
 # As represented in /usr/share/zoneinfo. An empty string ('') will result in UTC time being used.
-{% set TIMEZONE = 'America/New_York' %}
+{% set TIMEZONE = 'UTC' %}
 
 # TIME TO INSTALL AND REBOOT UBUNTU FOR SECURITY PATCHES FROM CANONICAL IN XX:XX FORMAT
 {% set SECURITY_INSTALL_TIME = "04:10" %}
@@ -124,7 +127,9 @@ write_files:
   - path: /etc/postfix/sasl_passwd
     permissions: '0400'
     content: |
+{% if SMTP_HOST %}
       [{{ SMTP_HOST }}]:{{ SMTP_PORT }} {{ SMTP_USERNAME }}:{{ SMTP_PASSWORD }}
+{% endif %}
   - path: /etc/systemd/system/freepbx.service
     permissions: '0644'
     content: |
@@ -177,7 +182,7 @@ write_files:
 
       [sshd]
       enabled = true
-      action = iptables[name=sshd, port=22, protocol=tcp]
+      action = ufw[name=sshd, port=22, protocol=tcp]
 
       [asterisk]
       enabled = true
@@ -187,7 +192,7 @@ write_files:
       maxretry = 3
       findtime = 120
       bantime = 1h
-      action = iptables[name=asterisk, port=5060, protocol=udp]
+      action = ufw[name=asterisk, port=5060, protocol=udp]
                %(action_mw)s
 
       [freepbx]
@@ -197,7 +202,7 @@ write_files:
       maxretry = 3
       findtime = 120
       bantime = 1h
-      action = iptables[name=freepbx, port=80, protocol=tcp]
+      action = ufw[name=freepbx, port=80, protocol=tcp]
                %(action_mw)s
   - path: /var/log/asterisk/asterisk_security.log
     permissions: '0664'
@@ -301,8 +306,7 @@ runcmd:
   - sed -i 's|^//\s*Unattended-Upgrade::Automatic-Reboot\s*".*";|Unattended-Upgrade::Automatic-Reboot "true";|' /etc/apt/apt.conf.d/50unattended-upgrades
   - sed -i 's|^//\s*Unattended-Upgrade::Automatic-Reboot-WithUsers\s*".*";|Unattended-Upgrade::Automatic-Reboot-WithUsers "true";|' /etc/apt/apt.conf.d/50unattended-upgrades
   - sed -i 's|^//\s*Unattended-Upgrade::Automatic-Reboot-Time\s*".*";|Unattended-Upgrade::Automatic-Reboot-Time "{{ SECURITY_REBOOT_TIME }}";|' /etc/apt/apt.conf.d/50unattended-upgrades
-# Erase Oracle Cloud's default restrictive iptables rules
-  - iptables -L | grep -q -v '^Chain' && iptables -F && netfilter-persistent save || echo "No iptables rules found"
+{% if NEED_SWAPFILE %}
 # fallocate -l 2G of space for swap file
   - fallocate -l 2G /swapfile
 # Set permission of the swap file to be readable and writable only by the owner  
@@ -313,6 +317,7 @@ runcmd:
   - swapon /swapfile
 # Add the swap file to the /etc/fstab file if it is not already there
   - grep -qxF '/swapfile none swap sw 0 0' /etc/fstab || sed -i -e "\$a/swapfile none swap sw 0 0" /etc/fstab
+{% endif %}
 {% if SMTP_HOST %}
   - postconf -e myhostname="{{ FQDN }}"
   - postconf -e mydomain="{{ DOMAIN }}"
@@ -359,7 +364,7 @@ runcmd:
 # FreePBX expects default MOH files in /var/lib/asterisk/moh/default, but Ubuntu's deb package places them in /usr/share/asterisk/moh/
   - ln -s /usr/share/asterisk/moh /var/lib/asterisk/moh/asterisk-moh-opsound
   - chown -R asterisk:asterisk /usr/share/asterisk/moh && chown -R asterisk:asterisk /var/lib/asterisk/moh/
-  - curl -L -O --output-dir /var/tmp http://mirror.freepbx.org/modules/packages/freepbx/freepbx-17.0-latest.tgz && tar zxvf /var/tmp/freepbx-17.0-latest.tgz -C /usr/src
+  - curl -L -O --output-dir /var/tmp https://mirror.freepbx.org/modules/packages/freepbx/freepbx-17.0-latest.tgz && tar zxvf /var/tmp/freepbx-17.0-latest.tgz -C /usr/src
   - cd /usr/src/freepbx && ./start_asterisk start
   - while asterisk -rx 'core show version' 2>&1 | grep -Eq '(Unable to connect to remote asterisk|No such command)'; do echo 'Waiting for Asterisk core to be available'; sleep 2; done && cd /usr/src/freepbx && ./install -n;
 # FreePBX is unaware of Ubuntu Noble's new mysql socket location
@@ -369,13 +374,15 @@ runcmd:
   - crontab /root/schedule.txt && rm /root/schedule.txt
   - mkdir -p /var/spool/asterisk/backup && chown asterisk:asterisk /var/spool/asterisk/backup
 # prepare the system for fail2ban
+{% if RESTORE_BACKUP_ASTERISK %}
   - curl -L -O --output-dir /var/spool/asterisk/backup https://github.com/rajannpatel/ubuntupbx/raw/refs/heads/main/ubuntupbx.asterisklogs.backup.tar.gz
   - fwconsole backup --restore='/var/spool/asterisk/backup/ubuntupbx.asterisklogs.backup.tar.gz'
-{% if RESTORE_BACKUP.startswith('https://') %}
+{% endif %}
+{% if RESTORE_BACKUP and RESTORE_BACKUP.startswith('https://') %}
   - curl -L -o /var/spool/asterisk/backup/restored-at-first-boot.tar.gz {{ RESTORE_BACKUP }}
-{% elif RESTORE_BACKUP.startswith('gs://') %}
+{% elif RESTORE_BACKUP and RESTORE_BACKUP.startswith('gs://') %}
   - gcloud storage cp {{ RESTORE_BACKUP }} /var/spool/asterisk/backup/restored-at-first-boot.tar.gz
-{% else %}
+{% elif RESTORE_BACKUP %}
   - echo "Unsupported RESTORE_BACKUP URL format: {{ RESTORE_BACKUP }}"
 {% endif %}
 {% if RESTORE_BACKUP %}
@@ -403,7 +410,9 @@ runcmd:
 {% endif %}
 {% endif %}
 # END -- ubuntupbx.core.backup.tar.gz
+{% if enable_T38Fax %}
   - echo "INSERT INTO sipsettings (keyword, data) VALUES ('t38pt_udptl', 'redundancy') ON DUPLICATE KEY UPDATE data = 'redundancy';" | fwconsole mysql
+{% endif %}
   - fwconsole chown
   - fwconsole reload
   - fwconsole restart
