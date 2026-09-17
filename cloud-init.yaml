@@ -364,6 +364,7 @@ runcmd:
 # Asterisk and FreePBX use /var/lib/asterisk/sounds/en/custom and not the `custom -> ../../../local/share/asterisk/sounds` symlink in /usr/share/asterisk/sounds/
   - rm -rf /usr/share/asterisk/sounds/custom; ln -s /var/lib/asterisk/sounds/en/custom /usr/share/asterisk/sounds/custom
 # FreePBX expects default MOH files in /var/lib/asterisk/moh/default, but Ubuntu's deb package places them in /usr/share/asterisk/moh/
+  - cp -a /usr/share/asterisk/moh/. /var/lib/asterisk/moh/
   - ln -s /usr/share/asterisk/moh /var/lib/asterisk/moh/asterisk-moh-opsound
   - chown -R asterisk:asterisk /usr/share/asterisk/moh && chown -R asterisk:asterisk /var/lib/asterisk/moh/
   - curl -L -O --output-dir /var/tmp https://mirror.freepbx.org/modules/packages/freepbx/freepbx-17.0-latest.tgz && tar zxvf /var/tmp/freepbx-17.0-latest.tgz -C /usr/src
