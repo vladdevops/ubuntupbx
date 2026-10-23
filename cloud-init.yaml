@@ -355,8 +355,10 @@ runcmd:
 {% endif %}
   - sed -i 's/\(^upload_max_filesize = \).*/\120M/' /etc/php/{{ PHP_VERSION }}/apache2/php.ini
   - sed -i 's/\(emory_limit = \).*/\1256M/' /etc/php/{{ PHP_VERSION }}/apache2/php.ini
+  - sed -i 's/^expose_php = .*/expose_php = Off/' /etc/php/{{ PHP_VERSION }}/apache2/php.ini
   - sed -i 's/^\(User\|Group\).*/\1 asterisk/' /etc/apache2/apache2.conf
   - sed -i 's/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
+  - sed -i 's/^ServerTokens .*/ServerTokens Prod/; s/^ServerSignature .*/ServerSignature Off/' /etc/apache2/conf-available/security.conf
   - a2enmod rewrite
   - rm /var/www/html/index.html
   - systemctl restart apache2
